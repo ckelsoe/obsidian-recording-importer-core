@@ -13,6 +13,7 @@ export {
 	BufferedDebugLogger,
 	NoopDebugLogger,
 	type DebugLogger,
+	type DebugEvent,
 } from './debug-logger';
 export {
 	PAGE_SIZE,
@@ -43,12 +44,19 @@ export {
 	runImport,
 	type FolderResolver,
 	type ImportDebugLog,
+	type AttachmentPipeline,
+	type ImportRunDeps,
+	type ImportRunObserver,
 } from './import-runner';
 export { createSequentialPageFetcher } from './list-paging';
 export {
 	managedMarkers,
 	transformManagedBody,
 	type ManagedMarkers,
+	locateManagedBlock,
+	managedBodyRegion,
+	spliceManagedBlock,
+	wrapManagedBody,
 } from './managed-block';
 export { hideManagedMarkers } from './managed-marker-view';
 export {
@@ -88,6 +96,12 @@ export {
 	type RenameFileFn,
 	type TagMode,
 	type TranscriptPlacement,
+	type DuplicatePromptDecision,
+	type FileLike,
+	type FolderLike,
+	type NoteWriterOptions,
+	type VaultLike,
+	type WriteOutcome,
 } from './note-writer';
 export type {
 	AdditionalSummary,
@@ -110,6 +124,8 @@ export {
 	WARN_LEAD_SHORT_MS,
 	clampTimerDelayMs,
 	sessionExpiryDecision,
+	MAX_TIMER_DELAY_MS,
+	MIN_TIMER_DELAY_MS,
 } from './session-expiry';
 export { trimChars, trimTrailingChars } from './text-trim';
 export {
