@@ -1,0 +1,77 @@
+name: Release
+
+# Consumers pin a tag (`#v0.1.0`) and bundle the TypeScript source themselves,
+# so a release is the tag plus notes: no build, no artifacts.
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Use Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check the tag matches package.json
+        run: |
+          tag="${GITHUB_REF#refs/tags/}"
+          version="v$(jq -r '.version' package.json)"
+          if [ "$tag" != "$version" ]; then
+            echo "::error::Tag $tag does not match package.json version $version"
+            exit 1
+          fi
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test
+
+      - name: Unused files, exports and dependencies
+        run: npm run knip
+
+      - name: Type coverage
+        run: npm run type-coverage
+
+      - name: Extract release notes from CHANGELOG
+        run: |
+          ver="${GITHUB_REF#refs/tags/v}"
+          awk -v ver="$ver" '
+            $0 ~ "^## \\[" ver "\\]" { in_section=1; next }
+            in_section && /^## \[/ { exit }
+            in_section { print }
+          ' CHANGELOG.md > release-notes.md
+          echo "Extracted release notes:"
+          cat release-notes.md
+
+      - name: Create release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          tag="${GITHUB_REF#refs/tags/}"
+          prerelease=""
+          case "$tag" in
+            *-beta*|*-rc*|*-alpha*) prerelease="--prerelease" ;;
+          esac
+          if [ -s release-notes.md ]; then
+            gh release create "$tag" $prerelease --title="$tag" --notes-file release-notes.md
+          else
+            gh release create "$tag" $prerelease --title="$tag" --generate-notes
+          fi
