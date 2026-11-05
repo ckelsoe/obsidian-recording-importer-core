@@ -38,7 +38,7 @@ function idx(
 	const byId = new Map<RecordingId, ImportedRecord>(
 		entries.map(([id, v]) => [
 			id as RecordingId,
-			{ path: `Plaud/${id}.md`, versionMs: v, plaudId: id },
+			{ path: `Plaud/${id}.md`, versionMs: v, recordingId: id },
 		]),
 	);
 	return {

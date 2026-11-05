@@ -118,7 +118,8 @@ export type {
 	Transcript,
 	TranscriptSegment,
 } from './recording-model';
-export type { ServiceProfile } from './service-profile';
+export { folderToken } from './service-profile';
+export type { ServiceProfile, TemplateFolder } from './service-profile';
 export {
 	SHORT_LIFETIME_HOURS,
 	WARN_LEAD_SHORT_MS,
