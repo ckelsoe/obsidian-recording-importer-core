@@ -2179,7 +2179,10 @@ export function extractPlaceholderFlag(
 	return value === 'true' || value === 'yes';
 }
 
-function formatSummaryBody(summary: Summary | null): string {
+function formatSummaryBody(
+	summary: Summary | null,
+	keepLeadingHeading = false,
+): string {
 	if (!summary) {
 		return '_No summary available._';
 	}
@@ -2190,8 +2193,9 @@ function formatSummaryBody(summary: Summary | null): string {
 			)
 			.join('\n\n');
 	}
+	const text = summary.text.trim();
 	return neutralizeSetextDashes(
-		stripLeadingSummaryHeading(summary.text.trim()),
+		keepLeadingHeading ? text : stripLeadingSummaryHeading(text),
 	);
 }
 
@@ -3063,7 +3067,15 @@ export function formatMarkdown(
 						text: expandTokens(summary.text),
 					}
 				: null;
-		parts.push('## Summary', '', formatSummaryBody(renderedSummary), '');
+		parts.push(
+			'## Summary',
+			'',
+			formatSummaryBody(
+				renderedSummary,
+				profile.keepLeadingSummaryHeading,
+			),
+			'',
+		);
 		if (renderedSummary?.aiSuggestion) {
 			const renderedSuggestion = expandTokens(
 				renderedSummary.aiSuggestion,
@@ -3076,10 +3088,13 @@ export function formatMarkdown(
 		// image markers are extracted and downloaded by the import runner exactly
 		// like the primary summary's.
 		for (const extra of options.additionalSummaries ?? []) {
-			const body = formatSummaryBody({
-				id: recording.id,
-				text: expandTokens(extra.text),
-			});
+			const body = formatSummaryBody(
+				{
+					id: recording.id,
+					text: expandTokens(extra.text),
+				},
+				profile.keepLeadingSummaryHeading,
+			);
 			parts.push(`## ${extra.heading}`, '', body, '');
 		}
 	}
@@ -3507,7 +3522,9 @@ export class NoteWriter {
 	 * Returns the base path unchanged when it is free, already this recording's
 	 * (matched by canonical id, so a v4 `of_<id>` recording still resolves to its
 	 * v3-era note), or holds a note with no `plaud-id` (kept writable to preserve
-	 * the historical overwrite behavior). Otherwise walks " 2", " 3", ... to the
+	 * the historical overwrite behavior, unless the profile sets
+	 * `protectUnownedNotes`, which treats it as another owner's). Otherwise walks
+	 * " 2", " 3", ... to the
 	 * first free-or-own path. If the suffix budget is exhausted it hands back the
 	 * base path so the caller's collision guard raises the loud, actionable error
 	 * instead of looping.
@@ -3532,8 +3549,9 @@ export class NoteWriter {
 				file,
 			);
 			if (
-				occupantId === null ||
-				this.profile.canonicalId(occupantId) === wantCanonical
+				occupantId === null
+					? this.profile.protectUnownedNotes !== true
+					: this.profile.canonicalId(occupantId) === wantCanonical
 			) {
 				return candidate;
 			}
@@ -3598,6 +3616,14 @@ export class NoteWriter {
 		// owner of its v3-era note (stored under the bare id), not a collision.
 		// resolveWritePath already disambiguates a genuine cross-recording clash;
 		// this guard stays as defense-in-depth for the exhausted-budget fallback.
+		if (
+			existingPlaudId === null &&
+			this.profile.protectUnownedNotes === true
+		) {
+			throw new NoteWriterError(
+				`Filename collision at ${notePath}: this note was not written by ${this.profile.pluginName}, so it is left alone. Rename or move it to import recording ${recordingId}.`,
+			);
+		}
 		if (
 			existingPlaudId !== null &&
 			this.profile.canonicalId(existingPlaudId) !==

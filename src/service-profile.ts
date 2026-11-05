@@ -39,6 +39,20 @@ export interface ServiceProfile {
 	 */
 	readonly markDataType: string;
 	/**
+	 * When true, a note at the target path that carries no `<keyPrefix>-id` is
+	 * treated as someone else's: the import writes beside it with a " 2" suffix
+	 * instead of overwriting it. Omitted or false keeps the historical
+	 * behavior, where such a note is overwritten (Plaud relies on it for notes
+	 * written before the id key existed). A service with no id-less legacy notes
+	 * should set it, because any such note is the user's own.
+	 */
+	readonly protectUnownedNotes?: boolean;
+	/**
+	 * When true, a summary body keeps its leading heading. Omitted or false
+	 * drops it, because Plaud repeats the note title there.
+	 */
+	readonly keepLeadingSummaryHeading?: boolean;
+	/**
 	 * Fills the service's own template tokens in a summary body. Omitted when
 	 * the service's summaries carry none.
 	 */

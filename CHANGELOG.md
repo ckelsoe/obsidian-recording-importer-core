@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-05
+
+### Added
+
+- `ServiceProfile.protectUnownedNotes`: when set, an import never overwrites a
+  note at its target path that has no recording id; it writes beside it with a
+  " 2" suffix. Off by default, so Plaud's handling of its older notes is
+  unchanged.
+- `ServiceProfile.keepLeadingSummaryHeading`: when set, summary bodies keep
+  their first heading instead of dropping it. Off by default.
+
 ## [0.1.0] - 2026-11-04
 
 ### Added

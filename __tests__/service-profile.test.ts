@@ -297,3 +297,80 @@ describe('runImport with a non-Plaud service', () => {
 		expect(outcome.results[0]).toMatchObject({ kind: 'written' });
 	});
 });
+
+describe('opt-in profile switches', () => {
+	const summary = { id: RECORDING.id, text: '### Decisions\n\nKeep it.' };
+
+	async function writeInto(
+		profile: ServiceProfile,
+		existing?: string,
+	): Promise<{ path: string; files: Map<string, string> }> {
+		const vault = makeFakeVault();
+		const path = 'Comu/2026-04-14 Standup.md';
+		if (existing !== undefined) vault.files.set(path, existing);
+		const writer = new NoteWriter(vault, {
+			profile,
+			outputFolder: 'Comu',
+			onDuplicate: 'overwrite',
+		});
+		const outcome = await writer.writeNote(
+			RECORDING,
+			TRANSCRIPT,
+			summary,
+			undefined,
+			{ includeTranscript: true, includeSummary: true },
+		);
+		return { path: outcome.path, files: vault.files };
+	}
+
+	it('overwrites a note without an id by default', async () => {
+		const { path, files } = await writeInto(COMU, 'my own note');
+		expect(path).toBe('Comu/2026-04-14 Standup.md');
+		expect(files.get(path)).toContain('comu-id:');
+	});
+
+	it('writes beside a note without an id when protectUnownedNotes is set', async () => {
+		const { path, files } = await writeInto(
+			{ ...COMU, protectUnownedNotes: true },
+			'my own note',
+		);
+		expect(path).toBe('Comu/2026-04-14 Standup 2.md');
+		expect(files.get('Comu/2026-04-14 Standup.md')).toBe('my own note');
+	});
+
+	it('still updates its own note when protectUnownedNotes is set', async () => {
+		const profile = { ...COMU, protectUnownedNotes: true };
+		const first = await writeInto(profile);
+		const vault = makeFakeVault();
+		for (const [k, v] of first.files) vault.files.set(k, v);
+		const writer = new NoteWriter(vault, {
+			profile,
+			outputFolder: 'Comu',
+			onDuplicate: 'overwrite',
+		});
+		const again = await writer.writeNote(
+			RECORDING,
+			TRANSCRIPT,
+			summary,
+			undefined,
+			{
+				includeTranscript: true,
+				includeSummary: true,
+			},
+		);
+		expect(again.path).toBe(first.path);
+		expect(again.status).toBe('overwritten');
+	});
+
+	it('drops the leading summary heading by default and keeps it when asked', async () => {
+		const dropped = await writeInto(COMU);
+		expect(dropped.files.get(dropped.path)).not.toContain('### Decisions');
+		const kept = await writeInto({
+			...COMU,
+			keepLeadingSummaryHeading: true,
+		});
+		expect(kept.files.get(kept.path)).toContain(
+			'### Decisions\n\nKeep it.',
+		);
+	});
+});
