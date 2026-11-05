@@ -17,5 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   logger, auto-sync and its runner, session-expiry decisions, list paging and
   migration planning.
 - `src/index.ts`, the public entry point, exporting the names the plugins use.
+- `folderToken(profile)`: the folder template token, `{{<keyPrefix>-folder}}`,
+  so each service fills its own token in subfolder and frontmatter templates.
 - The modules' tests, run against a test copy of the Plaud profile, and a
   contract test that drives a second, non-Plaud service end to end.

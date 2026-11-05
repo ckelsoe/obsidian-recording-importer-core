@@ -4,8 +4,8 @@ import {
 	NoteWriterCancelledError,
 	buildNoteName,
 	DEFAULT_NOTE_NAME_TEMPLATE,
-	extractPlaudIdFromFrontmatter,
-	extractPlaudPlaceholderFlag,
+	extractRecordingIdFromFrontmatter,
+	extractPlaceholderFlag,
 	extractSpeakers,
 	findTranscriptFoldLine,
 	findTranscriptHeadingLine,
@@ -48,6 +48,13 @@ import {
 } from '../src/note-writer';
 import { managedMarkers } from '../src/managed-block';
 import { formatPlaudWebUrl, TEST_PROFILE } from './helpers/test-profile';
+import { folderToken, type TemplateFolder } from '../src/service-profile';
+
+// The test profile's folder token, `{{plaud-folder}}`, filled with `name`.
+const testFolder = (name: string): TemplateFolder => ({
+	token: folderToken(TEST_PROFILE),
+	name,
+});
 import type {
 	Chapter,
 	ConsumerNote,
@@ -1029,7 +1036,7 @@ describe('resolveSubfolder', () => {
 				jun4,
 				undefined,
 				'-',
-				'Meetings',
+				testFolder('Meetings'),
 			),
 		).toBe('Meetings');
 		expect(
@@ -1038,7 +1045,7 @@ describe('resolveSubfolder', () => {
 				jun4,
 				undefined,
 				'-',
-				'Meetings',
+				testFolder('Meetings'),
 			),
 		).toBe('Meetings/2026');
 	});
@@ -1047,16 +1054,34 @@ describe('resolveSubfolder', () => {
 		// Plaud folders are flat, so a '/' in a name is literal text, flattened to
 		// the replacement rather than treated as a nesting level.
 		expect(
-			resolveSubfolder('{{plaud-folder}}', jun4, undefined, '-', 'Q3/Q4'),
+			resolveSubfolder(
+				'{{plaud-folder}}',
+				jun4,
+				undefined,
+				'-',
+				testFolder('Q3/Q4'),
+			),
 		).toBe('Q3-Q4');
 		expect(
-			resolveSubfolder('{{plaud-folder}}', jun4, undefined, '_', 'A:B'),
+			resolveSubfolder(
+				'{{plaud-folder}}',
+				jun4,
+				undefined,
+				'_',
+				testFolder('A:B'),
+			),
 		).toBe('A_B');
 	});
 
 	it('expands an unfiled recording (empty folder) to a literal _unfiled segment', () => {
 		expect(
-			resolveSubfolder('{{plaud-folder}}', jun4, undefined, '-', ''),
+			resolveSubfolder(
+				'{{plaud-folder}}',
+				jun4,
+				undefined,
+				'-',
+				testFolder(''),
+			),
 		).toBe('_unfiled');
 		// _unfiled expands inline wherever the token sits, so unfiled recordings are
 		// visibly grouped instead of mixing into the sibling date level.
@@ -1066,7 +1091,7 @@ describe('resolveSubfolder', () => {
 				jun4,
 				undefined,
 				'-',
-				'',
+				testFolder(''),
 			),
 		).toBe('2026/_unfiled');
 		expect(
@@ -1075,7 +1100,7 @@ describe('resolveSubfolder', () => {
 				jun4,
 				undefined,
 				'-',
-				'',
+				testFolder(''),
 			),
 		).toBe('_unfiled/2026');
 	});
@@ -1087,7 +1112,7 @@ describe('resolveSubfolder', () => {
 				jun4,
 				'Team sync',
 				'-',
-				'Meetings',
+				testFolder('Meetings'),
 			),
 		).toBe('Meetings/Team sync');
 	});
@@ -2356,7 +2381,7 @@ describe('formatMarkdown', () => {
 			makeTranscript(),
 			makeSummary(),
 			undefined,
-			{ plaudLocation: 'unfiled' },
+			{ location: 'unfiled' },
 		);
 		expect(md).toMatch(/^plaud-location: unfiled$/m);
 		expect(md).not.toMatch(/^plaud-folder:/m);
@@ -3499,7 +3524,7 @@ describe('NoteWriter', () => {
 		});
 	});
 
-	describe('cross-folder dedup via existingPathForPlaudId', () => {
+	describe('cross-folder dedup via existingPathForRecordingId', () => {
 		const PRIOR = 'Plaud/2026-04-14 Morning standup.md';
 		const priorContent =
 			'---\nplaud-id: abc123\n---\n# 2026-04-14 Morning standup\n';
@@ -3518,7 +3543,7 @@ describe('NoteWriter', () => {
 				outputFolder: 'Plaud',
 				subfolderTemplate: '{{YYYY-MM}}',
 				onDuplicate: 'skip',
-				existingPathForPlaudId: (id) =>
+				existingPathForRecordingId: (id) =>
 					id === 'abc123' ? PRIOR : null,
 			});
 
@@ -3543,7 +3568,7 @@ describe('NoteWriter', () => {
 				outputFolder: 'Plaud',
 				subfolderTemplate: '{{YYYY-MM}}',
 				onDuplicate: 'overwrite',
-				existingPathForPlaudId: (id) =>
+				existingPathForRecordingId: (id) =>
 					id === 'abc123' ? PRIOR : null,
 			});
 
@@ -3566,7 +3591,7 @@ describe('NoteWriter', () => {
 				outputFolder: 'Plaud',
 				subfolderTemplate: '{{YYYY-MM}}',
 				onDuplicate: 'skip',
-				existingPathForPlaudId: () => null,
+				existingPathForRecordingId: () => null,
 			});
 
 			const outcome = await writer.writeNote(
@@ -3588,7 +3613,7 @@ describe('NoteWriter', () => {
 				outputFolder: 'Plaud',
 				subfolderTemplate: '{{YYYY-MM}}',
 				onDuplicate: 'skip',
-				existingPathForPlaudId: () => 'Plaud/ghost.md',
+				existingPathForRecordingId: () => 'Plaud/ghost.md',
 			});
 
 			const outcome = await writer.writeNote(
@@ -3622,7 +3647,8 @@ describe('NoteWriter', () => {
 				profile: TEST_PROFILE,
 				outputFolder: 'Plaud',
 				onDuplicate: 'overwrite',
-				existingPathForPlaudId: (id) => (id === 'abc123' ? OLD : null),
+				existingPathForRecordingId: (id) =>
+					id === 'abc123' ? OLD : null,
 				migrateExistingNote: (oldPath, newPath) =>
 					asyncResult(() => {
 						migrateCalls.push([oldPath, newPath]);
@@ -3685,7 +3711,8 @@ describe('NoteWriter', () => {
 				profile: TEST_PROFILE,
 				outputFolder: 'Plaud',
 				onDuplicate: 'overwrite',
-				existingPathForPlaudId: (id) => (id === 'abc123' ? OLD : null),
+				existingPathForRecordingId: (id) =>
+					id === 'abc123' ? OLD : null,
 				// Buggy injector: resolves without actually moving the note, so
 				// nothing lands at the target path.
 				migrateExistingNote: async () => {},
@@ -3710,7 +3737,8 @@ describe('NoteWriter', () => {
 				profile: TEST_PROFILE,
 				outputFolder: 'Plaud',
 				onDuplicate: 'overwrite',
-				existingPathForPlaudId: (id) => (id === 'abc123' ? OLD : null),
+				existingPathForRecordingId: (id) =>
+					id === 'abc123' ? OLD : null,
 				migrateExistingNote: () =>
 					asyncResult(() => {
 						throw new Error('renameFile failed');
@@ -3740,7 +3768,8 @@ describe('NoteWriter', () => {
 				profile: TEST_PROFILE,
 				outputFolder: 'Plaud',
 				onDuplicate: 'skip',
-				existingPathForPlaudId: (id) => (id === 'abc123' ? OLD : null),
+				existingPathForRecordingId: (id) =>
+					id === 'abc123' ? OLD : null,
 				migrateExistingNote: (oldPath, newPath) =>
 					asyncResult(() => {
 						migrateCalls.push([oldPath, newPath]);
@@ -3773,7 +3802,7 @@ describe('NoteWriter', () => {
 				onDuplicate: 'overwrite',
 				// Vault-wide plaud-id lookup, as the plugin injects: return wherever
 				// the note for this recording currently lives.
-				existingPathForPlaudId: (id) =>
+				existingPathForRecordingId: (id) =>
 					id === 'abc123'
 						? ([...vault.files.keys()].find((p) =>
 								p.endsWith('Morning standup.md'),
@@ -4350,33 +4379,33 @@ describe('formatFrontmatter YAML hardening', () => {
 	});
 });
 
-// extractPlaudIdFromFrontmatter --------------------------------------------
+// extractRecordingIdFromFrontmatter --------------------------------------------
 
-describe('extractPlaudIdFromFrontmatter', () => {
+describe('extractRecordingIdFromFrontmatter', () => {
 	it('extracts an unquoted plaud-id', () => {
 		const content = '---\nplaud-id: abc123\ndate: 2026-04-14\n---\n\n# foo';
-		expect(extractPlaudIdFromFrontmatter(TEST_PROFILE, content)).toBe(
+		expect(extractRecordingIdFromFrontmatter(TEST_PROFILE, content)).toBe(
 			'abc123',
 		);
 	});
 
 	it('extracts a double-quoted plaud-id and unescapes it', () => {
 		const content = '---\nplaud-id: "abc\\"123"\n---\n\n';
-		expect(extractPlaudIdFromFrontmatter(TEST_PROFILE, content)).toBe(
+		expect(extractRecordingIdFromFrontmatter(TEST_PROFILE, content)).toBe(
 			'abc"123',
 		);
 	});
 
 	it('extracts a single-quoted plaud-id', () => {
 		const content = "---\nplaud-id: 'abc123'\n---\n\n";
-		expect(extractPlaudIdFromFrontmatter(TEST_PROFILE, content)).toBe(
+		expect(extractRecordingIdFromFrontmatter(TEST_PROFILE, content)).toBe(
 			'abc123',
 		);
 	});
 
 	it('returns null when there is no frontmatter', () => {
 		expect(
-			extractPlaudIdFromFrontmatter(
+			extractRecordingIdFromFrontmatter(
 				TEST_PROFILE,
 				'# just a title\n\nbody',
 			),
@@ -4385,30 +4414,34 @@ describe('extractPlaudIdFromFrontmatter', () => {
 
 	it('returns null when frontmatter has no plaud-id key', () => {
 		const content = '---\ndate: 2026-04-14\n---\n\nbody';
-		expect(extractPlaudIdFromFrontmatter(TEST_PROFILE, content)).toBeNull();
+		expect(
+			extractRecordingIdFromFrontmatter(TEST_PROFILE, content),
+		).toBeNull();
 	});
 
 	it('returns null when plaud-id is empty after quote stripping', () => {
 		const content = '---\nplaud-id: ""\n---\n\n';
-		expect(extractPlaudIdFromFrontmatter(TEST_PROFILE, content)).toBeNull();
+		expect(
+			extractRecordingIdFromFrontmatter(TEST_PROFILE, content),
+		).toBeNull();
 	});
 
 	it('handles CRLF line endings', () => {
 		const content = '---\r\nplaud-id: abc123\r\n---\r\n\r\nbody';
-		expect(extractPlaudIdFromFrontmatter(TEST_PROFILE, content)).toBe(
+		expect(extractRecordingIdFromFrontmatter(TEST_PROFILE, content)).toBe(
 			'abc123',
 		);
 	});
 
 	it('returns null for an empty plaud-id instead of reading the next line', () => {
 		expect(
-			extractPlaudIdFromFrontmatter(
+			extractRecordingIdFromFrontmatter(
 				TEST_PROFILE,
 				'---\nplaud-id:\ndate: 2026-04-14\n---\n\nbody',
 			),
 		).toBeNull();
 		expect(
-			extractPlaudIdFromFrontmatter(
+			extractRecordingIdFromFrontmatter(
 				TEST_PROFILE,
 				'---\r\nplaud-id:   \r\ndate: 2026-04-14\r\n---\r\n',
 			),
@@ -4423,7 +4456,9 @@ describe('extractPlaudIdFromFrontmatter', () => {
 			makeRecording({ id: 'null' as never }),
 			[],
 		);
-		expect(extractPlaudIdFromFrontmatter(TEST_PROFILE, fm)).toBe('null');
+		expect(extractRecordingIdFromFrontmatter(TEST_PROFILE, fm)).toBe(
+			'null',
+		);
 	});
 });
 
@@ -5519,24 +5554,24 @@ describe('NoteWriter.writeNote foldInfo', () => {
 	});
 });
 
-// extractPlaudPlaceholderFlag ------------------------------------------------
+// extractPlaceholderFlag ------------------------------------------------
 
-describe('extractPlaudPlaceholderFlag', () => {
+describe('extractPlaceholderFlag', () => {
 	it('returns true when the frontmatter carries plaud-placeholder: true', () => {
 		const content =
 			'---\nplaud-id: abc\nplaud-placeholder: true\n---\n\n# Note';
-		expect(extractPlaudPlaceholderFlag(TEST_PROFILE, content)).toBe(true);
+		expect(extractPlaceholderFlag(TEST_PROFILE, content)).toBe(true);
 	});
 
 	it('accepts quoted and yes forms case-insensitively', () => {
 		expect(
-			extractPlaudPlaceholderFlag(
+			extractPlaceholderFlag(
 				TEST_PROFILE,
 				'---\nplaud-placeholder: "true"\n---',
 			),
 		).toBe(true);
 		expect(
-			extractPlaudPlaceholderFlag(
+			extractPlaceholderFlag(
 				TEST_PROFILE,
 				'---\nplaud-placeholder: YES\n---',
 			),
@@ -5545,7 +5580,7 @@ describe('extractPlaudPlaceholderFlag', () => {
 
 	it('returns false for an empty marker even when the next line reads true', () => {
 		expect(
-			extractPlaudPlaceholderFlag(
+			extractPlaceholderFlag(
 				TEST_PROFILE,
 				'---\nplaud-placeholder:\ntrue\n---',
 			),
@@ -5554,18 +5589,18 @@ describe('extractPlaudPlaceholderFlag', () => {
 
 	it('returns false for a real note with no marker', () => {
 		const content = '---\nplaud-id: abc\nsource: plaud\n---\n\n# Note';
-		expect(extractPlaudPlaceholderFlag(TEST_PROFILE, content)).toBe(false);
+		expect(extractPlaceholderFlag(TEST_PROFILE, content)).toBe(false);
 	});
 
 	it('returns false when the marker is explicitly false or absent frontmatter', () => {
 		expect(
-			extractPlaudPlaceholderFlag(
+			extractPlaceholderFlag(
 				TEST_PROFILE,
 				'---\nplaud-placeholder: false\n---',
 			),
 		).toBe(false);
 		expect(
-			extractPlaudPlaceholderFlag(TEST_PROFILE, 'no frontmatter here'),
+			extractPlaceholderFlag(TEST_PROFILE, 'no frontmatter here'),
 		).toBe(false);
 	});
 });
@@ -5590,15 +5625,17 @@ describe('formatPlaceholderMarkdown', () => {
 		expect(md).toContain('start trans task error');
 	});
 
-	it('is recognized as a placeholder by extractPlaudPlaceholderFlag', () => {
+	it('is recognized as a placeholder by extractPlaceholderFlag', () => {
 		const md = formatPlaceholderMarkdown(
 			TEST_PROFILE,
 			makeRecording(),
 			'because reasons',
 		);
-		expect(extractPlaudPlaceholderFlag(TEST_PROFILE, md)).toBe(true);
+		expect(extractPlaceholderFlag(TEST_PROFILE, md)).toBe(true);
 		// And it still carries a parseable plaud-id for collision/dedup checks.
-		expect(extractPlaudIdFromFrontmatter(TEST_PROFILE, md)).toBe('abc123');
+		expect(extractRecordingIdFromFrontmatter(TEST_PROFILE, md)).toBe(
+			'abc123',
+		);
 	});
 
 	it('flattens newlines in the reason so the callout stays well-formed', () => {
@@ -5665,7 +5702,7 @@ describe('NoteWriter.writePlaceholderNote', () => {
 		expect(outcome.path).toBe('Plaud/2026-04-14 Morning standup.md');
 		const body =
 			vault.files.get('Plaud/2026-04-14 Morning standup.md') ?? '';
-		expect(extractPlaudPlaceholderFlag(TEST_PROFILE, body)).toBe(true);
+		expect(extractPlaceholderFlag(TEST_PROFILE, body)).toBe(true);
 	});
 
 	it('refreshes an existing placeholder rather than duplicating it', async () => {
@@ -5714,7 +5751,7 @@ describe('NoteWriter.writePlaceholderNote', () => {
 			realBody,
 		);
 		expect(
-			extractPlaudPlaceholderFlag(
+			extractPlaceholderFlag(
 				TEST_PROFILE,
 				vault.files.get('Plaud/2026-04-14 Morning standup.md') ?? '',
 			),
@@ -5770,7 +5807,7 @@ describe('NoteWriter.writeNote superseding a placeholder', () => {
 		expect(outcome.status).toBe('overwritten');
 		const body =
 			vault.files.get('Plaud/2026-04-14 Morning standup.md') ?? '';
-		expect(extractPlaudPlaceholderFlag(TEST_PROFILE, body)).toBe(false);
+		expect(extractPlaceholderFlag(TEST_PROFILE, body)).toBe(false);
 		expect(body).toContain('## Summary');
 	});
 
@@ -6162,7 +6199,7 @@ describe('note name and subfolder in the capture zone', () => {
 				instant,
 				'Sync',
 				'-',
-				'',
+				testFolder(''),
 				-240,
 			),
 		).toBe('2026/08/07');
@@ -6542,7 +6579,8 @@ describe('transcript placement', () => {
 				outputFolder: 'Plaud',
 				onDuplicate: 'overwrite',
 				transcriptPlacement: 'file-link',
-				existingPathForPlaudId: (id) => (id === 'abc123' ? OLD : null),
+				existingPathForRecordingId: (id) =>
+					id === 'abc123' ? OLD : null,
 				migrateExistingNote: (oldPath, newPath) =>
 					asyncResult(() => {
 						const c = vault.files.get(oldPath) ?? '';
@@ -6827,7 +6865,7 @@ describe('# and ^ in note names', () => {
 			profile: TEST_PROFILE,
 			outputFolder: 'Plaud',
 			onDuplicate: 'overwrite',
-			existingPathForPlaudId: (id) => (id === 'abc123' ? OLD : null),
+			existingPathForRecordingId: (id) => (id === 'abc123' ? OLD : null),
 			migrateExistingNote: (oldPath, newPath) =>
 				asyncResult(() => {
 					migrateCalls.push([oldPath, newPath]);
