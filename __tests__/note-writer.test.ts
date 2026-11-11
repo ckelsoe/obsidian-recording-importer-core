@@ -64,7 +64,7 @@ import type {
 	Transcript,
 	TranscriptSegment,
 } from '../src/recording-model';
-// The plugin gets moment from Obsidian (mapped to the jest mock, which re-exports
+// The plugin gets moment from Obsidian (mapped to the Vitest mock, which re-exports
 // the real moment). Reaching it the same way here shares that one singleton, so a
 // test can flip the global locale and observe the formatter's pinned English.
 import { moment } from 'obsidian';
@@ -253,7 +253,7 @@ describe('sanitizeFilename', () => {
 
 describe('isValidReplacementChar', () => {
 	it.each([['-'], ['_'], ['~'], ['+'], ['a'], ['9'], ['$'], ['@']])(
-		'accepts the safe single character %p',
+		'accepts the safe single character %o',
 		(char) => {
 			expect(isValidReplacementChar(char)).toBe(true);
 		},
@@ -3322,7 +3322,7 @@ describe('NoteWriter', () => {
 
 		it('does not invoke the callback when the file does not exist yet', async () => {
 			const vault = makeFakeVault();
-			const promptSpy = jest.fn(() =>
+			const promptSpy = vi.fn(() =>
 				Promise.resolve('overwrite' as const),
 			);
 			const writer = new NoteWriter(vault, {
@@ -5813,7 +5813,7 @@ describe('NoteWriter.writeNote superseding a placeholder', () => {
 
 	it('overwrites a placeholder without invoking the duplicate prompt', async () => {
 		const vault = makeFakeVault();
-		const promptOnDuplicate = jest.fn();
+		const promptOnDuplicate = vi.fn();
 		const writer = new NoteWriter(vault, {
 			profile: TEST_PROFILE,
 			outputFolder: 'Plaud',
@@ -6719,9 +6719,7 @@ describe('transcript placement', () => {
 				onDuplicate: 'overwrite',
 				transcriptPlacement: 'file-embed',
 			}).writeNote(makeRecording(), makeTranscript(), makeSummary());
-			const warn = jest
-				.spyOn(console, 'warn')
-				.mockImplementation(() => {});
+			const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
 			try {
 				const outcome = await new NoteWriter(vault, {
 					profile: TEST_PROFILE,

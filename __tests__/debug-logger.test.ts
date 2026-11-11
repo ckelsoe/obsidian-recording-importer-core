@@ -22,7 +22,7 @@ function fakeClock(baseMs: number = PINNED_BASE_MS): () => Date {
 
 function silentSink(): (message: string, payload?: unknown) => void {
 	return (): void => {
-		// swallow — tests don't want Jest output polluted by live console
+		// swallow — tests don't want Vitest output polluted by live console
 	};
 }
 

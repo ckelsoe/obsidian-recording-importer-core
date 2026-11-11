@@ -10,7 +10,7 @@
 //   `log` call at the source — this module trusts its input and does
 //   not re-scan for secrets.
 // - Keep the module free of `obsidian` imports so tests can exercise it
-//   with a plain Jest stub. The plugin wires the concrete logger instance
+//   with a plain Vitest stub. The plugin wires the concrete logger instance
 //   into the client via `PlaudClientOptions.debugLogger`.
 // - Treat `enabled=false` as a strict no-op: when debug is off, `log()`
 //   returns immediately without allocating the event object, storing it,
@@ -98,7 +98,7 @@ export class BufferedDebugLogger implements DebugLogger {
 	private readonly headerLines: readonly string[];
 	// Sink for the live DevTools mirror. Defaults to `console.log` so the
 	// plugin can tail events in Obsidian's developer console; tests pass
-	// a no-op to keep Jest output clean.
+	// a no-op to keep Vitest output clean.
 	private readonly consoleSink: (message: string, payload?: unknown) => void;
 
 	constructor(
