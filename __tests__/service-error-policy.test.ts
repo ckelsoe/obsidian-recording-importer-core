@@ -46,7 +46,7 @@ describe('classifyError with a service policy', () => {
 	});
 
 	it('never asks the policy about a note-writer error', () => {
-		const classify = jest.fn(() => null);
+		const classify = vi.fn(() => null);
 		classifyError(new NoteWriterError('filename collision at a.md'), {
 			...FAKE_POLICY,
 			classify,

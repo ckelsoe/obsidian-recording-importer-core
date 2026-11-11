@@ -21,7 +21,7 @@ Before opening a pull request, run:
 ```bash
 npx tsc --noEmit        # strict type-check
 npm run lint            # ESLint (eslint-plugin-obsidianmd), Prettier, submission pre-checks
-npm test                # Jest
+npm test                # Vitest
 npm run knip            # unused files, exports and dependencies
 npm run type-coverage   # at least 99%
 ```

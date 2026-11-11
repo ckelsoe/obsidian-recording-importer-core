@@ -1,9 +1,9 @@
-// Minimal stub of the `obsidian` module for jest. Wired in via
-// moduleNameMapper in jest.config.js.
+// Minimal stub of the `obsidian` module for Vitest. Wired in via
+// resolve.alias in vitest.config.mts.
 //
 // The `obsidian` package is a peer dependency provided at runtime by
 // Obsidian itself — at test time there is no real module to resolve, so
-// any source file that imports from it would fail in jest without this
+// any source file that imports from it would fail in Vitest without this
 // stub. Add more stub classes here as new source modules begin importing
 // from obsidian.
 //
@@ -14,13 +14,13 @@
 //
 // This header previously said tests "never exercise the stubbed code paths"
 // and that behavioral testing of Obsidian runtime code "belongs in manual
-// smoke-tests inside a real vault, not in jest." That was wrong, and acting
+// smoke-tests inside a real vault, not in Vitest." That was wrong, and acting
 // on it is how main.ts ended up with no coverage at all while 0.35.0 shipped
 // broken with the whole suite green. See issue #90. Prefer making a stub
 // observable over declaring the behavior untestable.
 //
-// Globals Obsidian injects but jest's `node` environment lacks (e.g.
-// createFragment) are installed in jest.setup.js, NOT here and not from test
+// Globals Obsidian injects but Vitest's `node` environment lacks (e.g.
+// createFragment) are installed in vitest.setup.cjs, NOT here and not from test
 // files, which must not touch globalThis (obsidianmd/no-global-this).
 
 /** Stand-in for an Obsidian DOM element, for the stubs below. */
@@ -155,7 +155,7 @@ export class PluginSettingTab {
  * `addExtraButton` take. The real components are chainable and register a click
  * handler; this records the label and keeps the handler callable so a test can
  * fire the click. Without that, everything a settings button DOES is unreachable
- * from jest, which is how the issue #86 silent-failure path went uncovered.
+ * from Vitest, which is how the issue #86 silent-failure path went uncovered.
  */
 export class ButtonStub {
 	label = '';
@@ -308,7 +308,7 @@ export class TFolder {
 	children: Array<TFile | TFolder> = [];
 }
 
-/** Network stub. Tests that need a response should jest.mock this per suite. */
+/** Network stub. Tests that need a response should vi.mock this per suite. */
 export function requestUrl(_options: unknown): never {
 	throw new Error(
 		'requestUrl is not stubbed for this test. Mock it in the suite that needs it.',
@@ -328,8 +328,13 @@ export function setIcon(_el: unknown, _icon: string): void {}
 // this file cannot do: it IS the 'obsidian' stub, so it would import itself.
 // Scoped off for __mocks__ in the eslint config rather than disabled inline,
 // because the config forbids inline disables of that rule.
-import * as moment from 'moment';
+import * as momentNamespace from 'moment';
 import { StateField } from '@codemirror/state';
+// Vitest loads CommonJS moment as an ES namespace whose `default` is the
+// callable factory; the namespace object itself is not callable.
+const moment = (
+	momentNamespace as unknown as { default: typeof momentNamespace }
+).default;
 export { moment };
 
 // Obsidian's Live Preview flag. The stub always reports Live Preview on; a test
