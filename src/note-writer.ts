@@ -622,6 +622,7 @@ function captureMoment(
 ): moment.Moment {
 	// TypeScript 6 types obsidian's re-export as a non-callable namespace, and the
 	// marketplace scan resolves it as `error`; the cast pins moment's own type.
+	// eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion -- needed under TypeScript 6 and in the marketplace scan; redundant only under this line's TypeScript 5.9
 	return (moment as unknown as typeof import('moment'))(date)
 		.utcOffset(offsetMinutes)
 		.locale('en');
