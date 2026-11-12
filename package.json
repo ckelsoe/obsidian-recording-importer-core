@@ -1,6 +1,6 @@
 {
 	"name": "obsidian-recording-importer-core",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"description": "Shared TypeScript source for the recording-importer Obsidian plugins: the recording model, note writer, import runner, vault index and auto-sync.",
 	"type": "module",
 	"main": "./src/index.ts",

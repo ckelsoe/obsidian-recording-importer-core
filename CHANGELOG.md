@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-11-12
+
+### Fixed
+
+- The moment cast in `note-writer.ts` now goes through `unknown`, so plugins
+  that bundle this source compile with TypeScript 6. No runtime change.
+
 ## [0.1.0] - 2026-11-04
 
 ### Added
