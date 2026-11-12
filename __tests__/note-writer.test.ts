@@ -1226,7 +1226,11 @@ describe('English locale is pinned (issue #30 output-preservation)', () => {
 		});
 		try {
 			// Sanity: the global locale really did switch (guards the test itself).
-			expect(moment(new Date(2026, 5, 4)).format('MMMM')).toBe('Mo6');
+			expect(
+				(moment as unknown as typeof import('moment'))(
+					new Date(2026, 5, 4),
+				).format('MMMM'),
+			).toBe('Mo6');
 			// The plugin's formatters must still emit English.
 			const jun4 = new Date(2026, 5, 4); // June 4 2026 (a Thursday)
 			expect(formatNoteName('{{MMMM}}', jun4, '')).toBe('June');

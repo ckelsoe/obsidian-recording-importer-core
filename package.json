@@ -24,7 +24,12 @@
 		"hooks": "node .husky/install.mjs"
 	},
 	"typeCoverage": {
-		"atLeast": 99
+		"atLeast": 100,
+		"ignoreFiles": [
+			"**/__tests__/**",
+			"**/__mocks__/**",
+			"**/*.test.ts"
+		]
 	},
 	"keywords": [
 		"obsidian"
@@ -57,8 +62,8 @@
 		"prettier": "^3.9.6",
 		"tslib": "^2.8.1",
 		"type-coverage": "^2.30.1",
-		"typescript": "^5.8.3",
-		"typescript-eslint": "^8.70.1",
+		"typescript": "~6.0.3",
+		"typescript-eslint": "^8.72.2",
 		"vitest": "^5.1.0"
 	},
 	"overrides": {
