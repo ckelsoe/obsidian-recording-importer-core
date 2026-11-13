@@ -20,6 +20,8 @@
 		"typecheck:marketplace": "tsc --noEmit -p tsconfig.scan.json",
 		"test": "vitest run",
 		"knip": "knip",
+		"ci": "node scripts/ci-local.mjs",
+		"scan-rules": "node scripts/check-scan-rules.mjs",
 		"type-coverage": "type-coverage",
 		"hooks": "node .husky/install.mjs"
 	},
